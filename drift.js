@@ -43,7 +43,9 @@ function render() {
     for (var i = 0; i < (g_triangles.length / 3); ++i) {
         var tri_a_idx = g_triangles[i * 3 + 0], tri_b_idx = g_triangles[i * 3 + 1], tri_c_idx = g_triangles[i * 3 + 2];
         var tri_a_x = g_particles_pos[tri_a_idx * 2 + 0], tri_a_y = g_particles_pos[tri_a_idx * 2 + 1], tri_b_x = g_particles_pos[tri_b_idx * 2 + 0], tri_b_y = g_particles_pos[tri_b_idx * 2 + 1], tri_c_x = g_particles_pos[tri_c_idx * 2 + 0], tri_c_y = g_particles_pos[tri_c_idx * 2 + 1];
-        g_CanvasCtx.fillStyle = 'rgba( 0, 0, 0, ' + g_particles_color[tri_a_idx * 4 + 3] / 255 + ' )';
+        var centroid_x = (tri_a_x + tri_b_x + tri_c_x) / 3, centroid_y = (tri_a_y + tri_b_y + tri_c_y) / 3;
+        var color_r = Math.floor(centroid_x / g_Width * 255), color_g = Math.floor(centroid_y / g_Height * 255), color_b = 255, color_a = g_particles_color[tri_a_idx * 4 + 3] / 255;
+        g_CanvasCtx.fillStyle = 'rgba( ' + color_r + ', ' + color_g + ', ' + color_b + ', ' + color_a + ' )';
         g_CanvasCtx.beginPath();
         g_CanvasCtx.moveTo(tri_a_x, tri_a_y);
         g_CanvasCtx.lineTo(tri_b_x, tri_b_y);
@@ -63,7 +65,7 @@ function init() {
         g_particles_color[i * 4 + 0] = 0;
         g_particles_color[i * 4 + 1] = 0;
         g_particles_color[i * 4 + 2] = 0;
-        g_particles_color[i * 4 + 3] = (0.25 + (Math.random() * 0.5)) * 255;
+        g_particles_color[i * 4 + 3] = (0.5 + (Math.random() * 0.001)) * 255;
     }
     g_lastTimestamp = performance.now();
     requestAnimationFrame(renderFrameCallback);
