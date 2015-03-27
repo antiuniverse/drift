@@ -1,7 +1,7 @@
 // Constants
-var NUM_PARTICLES = 75;
-var MIN_VELOCITY = 3;
-var MAX_VELOCITY = 20;
+var NUM_PARTICLES = 1000;
+var MIN_VELOCITY = 5;
+var MAX_VELOCITY = 30;
 var RADIUS = 5;
 // Particle positions
 var g_particles_pos_buffer = new ArrayBuffer(NUM_PARTICLES * 4 * 2); // 4 bytes per float, 2 floats per position (X, Y)
@@ -18,6 +18,7 @@ var g_Width = g_Canvas.offsetWidth;
 var g_Height = g_Canvas.offsetHeight;
 var g_lastTimestamp = 0;
 var g_triangles = [];
+var g_updateCount = 0;
 function renderFrameCallback(timestampMs) {
     var dtMs = timestampMs - g_lastTimestamp;
     update(dtMs);
@@ -30,11 +31,15 @@ function update(dtMs) {
         g_particles_pos[i * 2 + 0] += g_particles_vel[i * 2 + 0] * (dtMs / 1000);
         g_particles_pos[i * 2 + 1] += g_particles_vel[i * 2 + 1] * (dtMs / 1000);
     }
-    var tri_input = new Array(NUM_PARTICLES);
     for (var i = 0; i < NUM_PARTICLES; ++i) {
-        tri_input[i] = [g_particles_pos[i * 2 + 0], g_particles_pos[i * 2 + 1]];
     }
-    g_triangles = Delaunay.triangulate(tri_input);
+    if (g_updateCount++ % 300 == 0) {
+        var tri_input = new Array(NUM_PARTICLES);
+        for (var i = 0; i < NUM_PARTICLES; ++i) {
+            tri_input[i] = [g_particles_pos[i * 2 + 0], g_particles_pos[i * 2 + 1]];
+        }
+        g_triangles = Delaunay.triangulate(tri_input);
+    }
 }
 function render() {
     // Clear
@@ -44,7 +49,16 @@ function render() {
         var tri_a_idx = g_triangles[i * 3 + 0], tri_b_idx = g_triangles[i * 3 + 1], tri_c_idx = g_triangles[i * 3 + 2];
         var tri_a_x = g_particles_pos[tri_a_idx * 2 + 0], tri_a_y = g_particles_pos[tri_a_idx * 2 + 1], tri_b_x = g_particles_pos[tri_b_idx * 2 + 0], tri_b_y = g_particles_pos[tri_b_idx * 2 + 1], tri_c_x = g_particles_pos[tri_c_idx * 2 + 0], tri_c_y = g_particles_pos[tri_c_idx * 2 + 1];
         var centroid_x = (tri_a_x + tri_b_x + tri_c_x) / 3, centroid_y = (tri_a_y + tri_b_y + tri_c_y) / 3;
-        var color_r = Math.floor(centroid_x / g_Width * 255), color_g = Math.floor(centroid_y / g_Height * 255), color_b = 255, color_a = g_particles_color[tri_a_idx * 4 + 3] / 255;
+        var normalized_x = centroid_x / g_Width, normalized_y = centroid_y / g_Height;
+        var color_r = Math.floor(normalized_x * 255), color_g = Math.floor(normalized_y * 255), color_b = 255, color_a = g_particles_color[tri_a_idx * 4 + 3] / 255;
+        /*
+        if ( normalized_x > 0.7 && normalized_x < 0.8 ) {
+            color_r = 0;
+            color_g = 0;
+            color_b = 0;
+            color_a = 1;
+        }
+        */
         g_CanvasCtx.fillStyle = 'rgba( ' + color_r + ', ' + color_g + ', ' + color_b + ', ' + color_a + ' )';
         g_CanvasCtx.beginPath();
         g_CanvasCtx.moveTo(tri_a_x, tri_a_y);
@@ -65,7 +79,7 @@ function init() {
         g_particles_color[i * 4 + 0] = 0;
         g_particles_color[i * 4 + 1] = 0;
         g_particles_color[i * 4 + 2] = 0;
-        g_particles_color[i * 4 + 3] = (0.5 + (Math.random() * 0.001)) * 255;
+        g_particles_color[i * 4 + 3] = 128;
     }
     g_lastTimestamp = performance.now();
     requestAnimationFrame(renderFrameCallback);

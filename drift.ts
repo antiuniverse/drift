@@ -1,7 +1,7 @@
 // Constants
-var NUM_PARTICLES = 75;
-var MIN_VELOCITY = 3;
-var MAX_VELOCITY = 20;
+var NUM_PARTICLES = 1000;
+var MIN_VELOCITY = 5;
+var MAX_VELOCITY = 30;
 var RADIUS = 5;
 
 // Particle positions
@@ -24,6 +24,7 @@ var g_Height = g_Canvas.offsetHeight;
 var g_lastTimestamp = 0;
 
 var g_triangles : Array<number> = [];
+var g_updateCount : number = 0;
 
 
 
@@ -36,16 +37,24 @@ function renderFrameCallback( timestampMs : number ) {
 }
 
 function update( dtMs : number ) {
+    // Apply velocity
     for (var i = 0; i < NUM_PARTICLES; ++i) {
         g_particles_pos[i*2 + 0] += g_particles_vel[i*2 + 0] * (dtMs / 1000);
         g_particles_pos[i*2 + 1] += g_particles_vel[i*2 + 1] * (dtMs / 1000);
     }
 
-    var tri_input = new Array( NUM_PARTICLES );
+    // If particles have left the canvas bounds, make sure their velocity is reflected.
     for (var i = 0; i < NUM_PARTICLES; ++i) {
-        tri_input[i] = [ g_particles_pos[i*2 + 0], g_particles_pos[i*2 + 1] ];
+
     }
-    g_triangles = Delaunay.triangulate( tri_input );
+
+    if ( g_updateCount++ % 300 == 0 ) {
+        var tri_input = new Array( NUM_PARTICLES );
+        for ( var i = 0; i < NUM_PARTICLES; ++i ) {
+            tri_input[i] = [g_particles_pos[i * 2 + 0], g_particles_pos[i * 2 + 1]];
+        }
+        g_triangles = Delaunay.triangulate( tri_input );
+    }
 }
 
 function render() {
@@ -57,7 +66,7 @@ function render() {
     // Draw particles as vertices
     g_CanvasCtx.fillStyle = 'rgba( 0, 0, 0, 0.5 )';
     for (var i = 0; i < NUM_PARTICLES; ++i) {
-        g_CanvasCtx.fillRect( g_particles_pos[i*2 + 0], g_particles_pos[i*2 + 1], RADIUS, RADIUS );
+        g_CanvasCtx.fillRect( g_particles_pos[i*2 + 0] - RADIUS / 2, g_particles_pos[i*2 + 1] - RADIUS / 2, RADIUS, RADIUS );
     }
     */
 
@@ -76,10 +85,22 @@ function render() {
         var centroid_x = (tri_a_x + tri_b_x + tri_c_x) / 3,
             centroid_y = (tri_a_y + tri_b_y + tri_c_y) / 3;
 
-        var color_r = Math.floor( centroid_x / g_Width * 255 ),
-            color_g = Math.floor( centroid_y / g_Height * 255 ),
+        var normalized_x = centroid_x / g_Width,
+            normalized_y = centroid_y / g_Height;
+
+        var color_r = Math.floor( normalized_x * 255 ),
+            color_g = Math.floor( normalized_y * 255 ),
             color_b = 255,
             color_a = g_particles_color[tri_a_idx*4 + 3] / 255;
+
+        /*
+        if ( normalized_x > 0.7 && normalized_x < 0.8 ) {
+            color_r = 0;
+            color_g = 0;
+            color_b = 0;
+            color_a = 1;
+        }
+        */
 
         g_CanvasCtx.fillStyle = 'rgba( ' + color_r + ', ' + color_g + ', ' + color_b + ', ' + color_a + ' )';
         g_CanvasCtx.beginPath();
@@ -105,7 +126,7 @@ function init(): void {
         g_particles_color[i*4 + 0] = 0;
         g_particles_color[i*4 + 1] = 0;
         g_particles_color[i*4 + 2] = 0;
-        g_particles_color[i*4 + 3] = (0.5 + (Math.random() * 0.001)) * 255;
+        g_particles_color[i*4 + 3] = 128;
     }
 
     g_lastTimestamp = performance.now();
